@@ -1,5 +1,5 @@
 - hosts: all
-  become: true
+  become: yes
   tasks:
     # 1. Accept repository changes explicitly
     - name: Accept repository changes explicitly
@@ -34,3 +34,12 @@
         force: yes
       vars:
         ansible_apt_excludes: "wazuh-agent"
+
+- name: Remove APT lock files
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /var/lib/apt/lists/lock
+    - /var/cache/apt/archives/lock
+    - /var/lib/dpkg/lock
