@@ -4,6 +4,7 @@
   become: yes
   tasks:
     - name: Remove APT lock files
+      become: yes
       file:
         path: "{{ item }}"
         state: absent
@@ -19,9 +20,9 @@
         cache_valid_time: 3600
 
     - name: Upgrade all packages
-      command: apt-get dist-upgrade -y
       become: yes
+      command: apt-get dist-upgrade -y
 
     - name: Autoremove unused packages
-      command: apt-get autoremove -y
       become: yes
+      command: apt-get autoremove -y
