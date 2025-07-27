@@ -1,0 +1,36 @@
+- hosts: all
+  become: true
+  tasks:
+    # 1. Accept repository changes explicitly
+    - name: Accept repository changes explicitly
+      shell: apt-get update --allow-releaseinfo-change
+      ignore_errors: yes
+
+    # 2. Check for GPG key error
+    - name: Check for GPG key error during apt update
+      shell: apt-get update
+      register: apt_update_result
+      ignore_errors: yes
+
+    # 3. Update MongoDB GPG key if error detected
+    - name: Update MongoDB GPG key if error is detected
+      shell: |
+        wget -qO - https://www.mongodb.org/static/pgp/server-3.2.asc | apt-key add -
+      when: "'EXPKEYSIG D68FA50FEA312927' in apt_update_result.stderr"
+      ignore_errors: yes
+
+    # 4. Update apt cache
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        lock_timeout: 120
+
+    # 5. Upgrade all packages except wazuh-agent
+    - name: Upgrade all packages except wazuh-agent
+      apt:
+        upgrade: dist
+        state: latest
+        lock_timeout: 120
+        force: yes
+      vars:
+        ansible_apt_excludes: "wazuh-agent"
