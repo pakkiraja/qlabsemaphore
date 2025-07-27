@@ -1,4 +1,5 @@
-- hosts: all
+- name: Update Ubuntu packages
+  hosts: all
   become: yes
   tasks:
     # 1. Accept repository changes explicitly
@@ -12,34 +13,25 @@
       register: apt_update_result
       ignore_errors: yes
 
-    # 3. Update MongoDB GPG key if error detected
-    - name: Update MongoDB GPG key if error is detected
-      shell: |
-        wget -qO - https://www.mongodb.org/static/pgp/server-3.2.asc | apt-key add -
-      when: "'EXPKEYSIG D68FA50FEA312927' in apt_update_result.stderr"
-      ignore_errors: yes
-
-    # 4. Update apt cache
+    # 3. Update apt cache
     - name: Update apt cache
       apt:
         update_cache: yes
         lock_timeout: 120
 
-    # 5. Upgrade all packages except wazuh-agent
+    # 4. Upgrade all packages except wazuh-agent
     - name: Upgrade all packages except wazuh-agent
-      apt:
-        upgrade: dist
-        state: latest
-        lock_timeout: 120
-        force: yes
-      vars:
-        ansible_apt_excludes: "wazuh-agent"
+      shell: |
+        apt-mark hold wazuh-agent
+        apt-get dist-upgrade -y
+        apt-mark unhold wazuh-agent
 
-- name: Remove APT lock files
-  file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-    - /var/lib/apt/lists/lock
-    - /var/cache/apt/archives/lock
-    - /var/lib/dpkg/lock
+    # 5. Remove APT lock files
+    - name: Remove APT lock files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /var/lib/apt/lists/lock
+        - /var/cache/apt/archives/lock
+        - /var/lib/dpkg/lock
