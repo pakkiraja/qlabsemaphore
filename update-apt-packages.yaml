@@ -3,20 +3,7 @@
   hosts: all
   become: yes
   tasks:
-    - name: Update apt cache
-      apt:
-        update_cache: yes
-        cache_valid_time: 3600
-
-    - name: Upgrade all packages using shell
-      become: yes
-      shell: |
-        apt-get update
-        apt-get dist-upgrade -y
-        apt-get autoremove -y
-
     - name: Remove APT lock files
-      become: yes
       file:
         path: "{{ item }}"
         state: absent
@@ -25,3 +12,16 @@
         - /var/cache/apt/archives/lock
         - /var/lib/dpkg/lock
         - /var/lib/dpkg/lock-frontend
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade all packages
+      command: apt-get dist-upgrade -y
+      become: yes
+
+    - name: Autoremove unused packages
+      command: apt-get autoremove -y
+      become: yes
