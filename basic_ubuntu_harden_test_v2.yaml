@@ -30,12 +30,6 @@
         group: root
         mode: '0755'
 
-    - name: Disable Avahi daemon
-      systemd:
-        name: avahi-daemon
-        enabled: no
-        state: stopped
-
     - name: Harden SSH configuration
       lineinfile:
         path: /etc/ssh/sshd_config
