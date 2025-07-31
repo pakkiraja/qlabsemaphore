@@ -1,0 +1,73 @@
+---
+- name: Basic Ubuntu Server Hardening
+  hosts: all
+  become: yes
+
+  vars:
+    motd_script_path: /etc/update-motd.d/00-warning-banner
+
+  tasks:
+
+    - name: Update all packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Deploy MOTD login banner
+      copy:
+        content: |
+          #!/bin/sh
+          echo "***************************************************************************"
+          echo "*                           WELCOME TO QUESSIT                            *"
+          echo "*                                                                         *"
+          echo "* WARNING: This system is for authorized use only.                        *"
+          echo "* All activity is monitored and logged. Unauthorized access is prohibited.*"
+          echo "*                                                                         *"
+          echo "* For support, contact: cloud.itsupport@quesscorp.com                     *"
+          echo "***************************************************************************"
+        dest: "{{ motd_script_path }}"
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Disable Avahi daemon
+      systemd:
+        name: avahi-daemon
+        enabled: no
+        state: stopped
+
+    - name: Harden SSH configuration
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - { regexp: '^PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^PasswordAuthentication', line: 'PasswordAuthentication no' }
+      notify: Restart SSH
+
+    - name: Set up basic UFW rules
+      ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: Enable UFW firewall
+      ufw:
+        state: enabled
+
+    - name: Set permissions on sensitive files
+      file:
+        path: "{{ item }}"
+        owner: root
+        group: root
+        mode: '0600'
+      loop:
+        - /etc/passwd
+        - /etc/shadow
+
+  handlers:
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
